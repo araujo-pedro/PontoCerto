@@ -13,38 +13,17 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
 
-public class GpsUtil extends Activity {
+/**
+ * @author Pedro Araujo
+ */
+public class GPSTracker {
 
     private Context contextThis;
     private AppCompatActivity activityThis;
     private String resultado;
+    private static Location ultimaLocalizacao;
 
-    public GpsUtil() {
-        /*this.contextThis = context;
-        this.activityThis = activity;
-
-        this.pedirPermissoes();*/
-    }
-
-    public void goLocalizacao(Context context, AppCompatActivity activity) {
-        contextThis = context;
-        activityThis = activity;
-
-        pedirPermissoes();
-    }
-
-    private void pedirPermissoes() {
-
-        if (ActivityCompat.checkSelfPermission(contextThis, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(contextThis, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(activityThis, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-        } else
-            configurarServico();
-    }
-
-
-    @Override
+    //@Override
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
         switch (requestCode) {
@@ -60,12 +39,46 @@ public class GpsUtil extends Activity {
     }
 
 
+
+
+    public void goLocalizacao(Context context, AppCompatActivity activity) {
+
+        contextThis = context;
+        activityThis = activity;
+
+        pedirPermissoes();
+    }
+
+    private void pedirPermissoes() {
+
+        if (!verificaPermissao()) {
+
+            ActivityCompat.requestPermissions(activityThis, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+
+            pedirPermissoes();
+
+        } else
+            configurarServico();
+    }
+
+    private Boolean verificaPermissao() {
+
+        if (ActivityCompat.checkSelfPermission(contextThis, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(contextThis, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return false;
+        } else
+            return true;
+    }
+
+
+
+
+
     private void configurarServico() {
         try {
             LocationManager locationManager = (LocationManager) activityThis.getSystemService(Context.LOCATION_SERVICE);
 
             LocationListener locationListener = new LocationListener() {
-                //Log.d("LocationListener", "ENTROU");
                 public void onLocationChanged(Location location) {
                     Log.d("LocationListener", "ENTROU");
                     Double latPoint = location.getLatitude();
@@ -74,6 +87,8 @@ public class GpsUtil extends Activity {
 
                     resultado = latPoint.toString() + " " + lngPoint.toString();
                     Log.d("LocationListener", resultado);
+
+                    ultimaLocalizacao = location;
                 }
 
                 public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -85,33 +100,22 @@ public class GpsUtil extends Activity {
                 public void onProviderDisabled(String provider) {
                 }
             };
-            //locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
             Boolean networkEnable = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-            Log.d("NETWORK", networkEnable.toString());
+            Log.d("NETWORK_ENABLE", networkEnable.toString());
             Boolean gpsEnable = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-            Log.d("GPS", gpsEnable.toString());
+            Log.d("GPS_ENABLE", gpsEnable.toString());
 
-            locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, locationListener, null);
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
         } catch (SecurityException ex) {
             Toast.makeText(activityThis, ex.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
-    public void  atualizar(Location location){
-        Double latPoint = location.getLatitude();
-        Double lngPoint = location.getLongitude();
+    public static Location getUltimaLocalizacao() {
 
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append(latPoint.toString());
-        stringBuilder.append(" || ");
-        stringBuilder.append(latPoint.toString());
-
-        this.resultado = stringBuilder.toString();
+        return ultimaLocalizacao;
     }
 
-    public String getResultado() {
-        return resultado;
-    }
+
 }
